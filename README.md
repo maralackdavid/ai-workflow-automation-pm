@@ -1,4 +1,4 @@
-# AI & Workflow Automation – Project Management (Enterprise Multicloud Infrastructure & Atlassian Ecosystem Edition)
+# AI & Workflow Automation – Project Management (Enterprise Production Implementation: AWS & Jira AI Edition)
 
 An enterprise Technical Program Management (TPM) acceleration framework engineered to transform program operations. Built on **Amazon Web Services (AWS)** reference architectures and deeply integrated with **Jira AI (Atlassian Intelligence, Rovo Agents, and the official Atlassian Remote MCP Server)**, this repository replaces manual status spreadsheets, retrospective meeting notes, and reactive status chasing with event-driven telemetry, automated executive synthesis, agentic dependency tracking, and predictive delivery risk detection.
 
@@ -178,7 +178,46 @@ The implementation is partitioned into four modular, production-ready components
           ]
         }
         ```
-    *   **Jira AI Smart Ingestion:** An AWS Lambda function ingests the validated JSON payload and dispatches it to Jira Cloud via REST / MCP. **Atlassian Intelligence** automatically predicts relevant field values (Components, Priority, Labels), scans for potential duplicate issues, and suggests child work items to eliminate administrative backlog grooming.
+    *   **Jira AI Smart Ingestion:** An AWS Lambda function ingests the validated JSON payload and dispatches it to Jira Cloud via REST / MCP.
+    *   **Production Lambda Handler (`01-meeting-intelligence/src/lambda_bedrock_parser.py`):**
+        ```python
+        import json, os, boto3
+
+        s3 = boto3.client('s3')
+        bedrock = boto3.client('bedrock-runtime', region_name=os.environ.get('AWS_REGION', 'us-east-1'))
+        MODEL_ID = 'anthropic.claude-3-5-sonnet-20240620-v1:0'
+
+        def lambda_handler(event, context):
+            record = event['Records'][0]
+            bucket, key = record['s3']['bucket']['name'], record['s3']['object']['key']
+            obj = s3.get_object(Bucket=bucket, Key=key)
+            transcript_text = json.loads(obj['Body'].read().decode('utf-8'))['results']['transcripts'][0]['transcript']
+
+            schema_prompt = (
+                "Extract engineering deliverables from standup transcript into raw JSON.\n"
+                f"Transcript: {transcript_text}\n"
+                "Schema: {\"sprint_milestone\": \"str\", \"key_decisions\": [\"str\"], "
+                "\"action_items\": [{\"summary\": \"str\", \"assignee\": \"str\", \"priority\": \"P0|P1|P2\", "
+                "\"blocking_dependency\": \"str|None\", \"target_completion_days\": 1}]}"
+            )
+
+            payload = {
+                'anthropic_version': 'bedrock-2023-05-31',
+                'max_tokens': 2048,
+                'temperature': 0.1,
+                'system': 'You are an enterprise Principal TPM assistant. Output ONLY valid JSON adhering strictly to the schema.',
+                'messages': [{'role': 'user', 'content': schema_prompt}]
+            }
+            res = bedrock.invoke_model(modelId=MODEL_ID, contentType='application/json', accept='application/json', body=json.dumps(payload))
+            raw_output = json.loads(res['body'].read().decode('utf-8'))['content'][0]['text'].strip()
+            if raw_output.startswith('```json'):
+                raw_output = raw_output.split('```json')[1].split('```')[0].strip()
+            structured_actions = json.loads(raw_output)
+
+            output_key = key.replace('.json', '-extracted-actions.json')
+            s3.put_object(Bucket=os.environ['VERIFIED_ACTIONS_BUCKET'], Key=output_key, Body=json.dumps(structured_actions, indent=2), ContentType='application/json')
+            return {'status': 'SUCCESS', 'extracted_items': len(structured_actions['action_items'])}
+        ``` **Atlassian Intelligence** automatically predicts relevant field values (Components, Priority, Labels), scans for potential duplicate issues, and suggests child work items to eliminate administrative backlog grooming.
 
 ### Module 2: Automated Executive Reporting & Variance Dashboards (`/02-executive-reporting`)
 *   **Focus Area:** AI-driven project tracking, executive reporting, and live dashboard generation.
@@ -198,6 +237,54 @@ The implementation is partitioned into four modular, production-ready components
 *   **Deep Jira AI Integration:**
     *   **Official Atlassian Remote MCP Server (`https://mcp.atlassian.com/v2/mcp`):** Connects Amazon Bedrock AgentCore directly to the **Atlassian Teamwork Graph** using secure OAuth 2.1 authorization.
     *   **Multi-Repository Dependency Discovery:** Agents execute tool calls (`search_jira`, `read_jira`, `read_confluence`, `read_bitbucket`) across disparate team backlogs, cross-referencing API contract pull requests against delivery roadmap commitments.
+    *   **Production Step Functions ASL Definition (`03-agentic-orchestration/cdk/step_functions_hitl_workflow.asl.json`):**
+        ```json
+        {
+          "Comment": "Agentic Dependency Audit with Human-in-the-Loop Approval Token",
+          "StartAt": "RunMCPDependencyAudit",
+          "States": {
+            "RunMCPDependencyAudit": {
+              "Type": "Task",
+              "Resource": "arn:aws:lambda:::function:audit-dependencies-mcp",
+              "Next": "EvaluateDiscrepancies"
+            },
+            "EvaluateDiscrepancies": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.conflicts_found",
+                  "NumericGreaterThan": 0,
+                  "Next": "RequestTPMApproval"
+                }
+              ],
+              "Default": "PublishCleanRoadmap"
+            },
+            "RequestTPMApproval": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::sqs:sendMessage.waitForTaskToken",
+              "Parameters": {
+                "QueueUrl.$": "$.tpm_approval_queue_url",
+                "MessageBody": {
+                  "TaskToken.$": "$$.Task.Token",
+                  "Summary.$": "$.mitigation_proposal",
+                  "AffectedTeams.$": "$.teams"
+                }
+              },
+              "TimeoutSeconds": 86400,
+              "Next": "ApplyApprovedMitigation"
+            },
+            "ApplyApprovedMitigation": {
+              "Type": "Task",
+              "Resource": "arn:aws:lambda:::function:sync-jira-roadmaps",
+              "End": true
+            },
+            "PublishCleanRoadmap": {
+              "Type": "Pass",
+              "End": true
+            }
+          }
+        }
+        ```
     *   **Step Functions Human-in-the-Loop (HITL) Gate:** Ensures autonomous agents cannot unilaterally alter production roadmap baselines. When an agent identifies a potential dependency clash, it drafts a mitigation proposal and halts execution until an authorized TPM reviews and approves the change via Amazon SNS/SES callback tasks.
 
 ### Module 4: Predictive Delivery Risk & Telemetry (`/04-predictive-risk-telemetry`)
@@ -207,42 +294,152 @@ The implementation is partitioned into four modular, production-ready components
     *   **AI-Native SDLC Telemetry:** Ingests Jira AI development metrics (tracking agent execution loops, cycle times, PR throughput, and unassigned blocker aging).
     *   **Dynamic Anomaly Detection:** Configures CloudWatch Metric Math algorithms over engineering telemetry, establishing dynamic expected-value bands for PR turnaround, ticket re-opening rates, and blocker aging.
     *   **Adaptive Data Monitoring Framework:** Builds on telemetry monitoring principles and patented techniques (U.S. Patent #8,984,124: *System and Method for Adaptive Data Monitoring*) to filter noise and flag statistically meaningful delivery deceleration.
+    *   **Production Metric Math Alarm Definition (`04-predictive-risk-telemetry/config/cloudwatch_anomaly_alarms.json`):**
+        ```json
+        {
+          "Type": "AWS::CloudWatch::Alarm",
+          "Properties": {
+            "AlarmName": "Predictive-Delivery-Risk-PR-Turnaround",
+            "AlarmDescription": "Triggers when PR review latency breaches dynamic statistical anomaly band for 3 consecutive periods",
+            "Metrics": [
+              {
+                "Id": "m1",
+                "MetricStat": {
+                  "Metric": {
+                    "Namespace": "EngineeringTelemetry/Git",
+                    "MetricName": "PullRequestReviewLatencyHours"
+                  },
+                  "Period": 3600,
+                  "Stat": "Average"
+                },
+                "ReturnData": true
+              },
+              {
+                "Id": "ad1",
+                "Expression": "ANOMALY_DETECTION_BAND(m1, 2)",
+                "Label": "ExpectedPRLatencyBand",
+                "ReturnData": true
+              }
+            ],
+            "ComparisonOperator": "GreaterThanUpperThreshold",
+            "ThresholdMetricId": "ad1",
+            "EvaluationPeriods": 3,
+            "TreatMissingData": "notBreaching",
+            "AlarmActions": ["arn:aws:sns:::tpm-early-warning-escalations"]
+          }
+        }
+        ```
     *   **Proactive Warning Alerts:** Automatically notifies TPMs and engineering directors two to three weeks before scheduled release dates when upstream dependency churn indicates a high probability of delivery slip.
 
 ---
 
-## 6. Repository Structure
+## 6. Production Repository Structure
 
 ```
 ai-workflow-automation-pm/
 │
 ├── README.md                                  # Executive summary, operating model & architecture
 ├── LICENSE                                    # MIT License
+├── Makefile                                   # Build, test, and deployment automation targets
 │
 ├── 01-meeting-intelligence/
-│   ├── lambda_transcribe_handler.py           # Serverless audio ingestion and transcription trigger
-│   ├── prompts/action_item_extractor.json     # Bedrock prompt template enforcing strict JSON output
-│   └── tests/test_transcribe_pipeline.py      # Unit tests for domain vocabulary and extraction
+│   ├── cdk/
+│   │   ├── app.py                             # CDK entrypoint defining S3, Lambda & Transcribe stacks
+│   │   └── meeting_stack.py                   # Infrastructure-as-Code stack definition
+│   ├── src/
+│   │   ├── lambda_transcribe_trigger.py       # Audio ingestion trigger starting Transcribe jobs
+│   │   ├── lambda_bedrock_parser.py           # Production Bedrock JSON extractor (Claude 3.5 Sonnet)
+│   │   └── jira_dispatcher.py                 # REST API & webhook dispatcher to Jira Cloud
+│   ├── config/
+│   │   └── custom_vocabulary.txt              # Domain vocabulary (BIG-IP, NGINX, EKS, Envoy, WAF)
+│   └── tests/
+│       ├── test_extraction_schema.py          # Pytest validating schema adherence
+│       └── mock_transcribe_output.json        # Diarized test fixture
 │
 ├── 02-executive-reporting/
-│   ├── glue_etl_sprint_metrics.py             # Serverless ETL aggregating sprint and PR telemetry
-│   ├── bedrock_variance_summarizer.py         # Multi-tier executive narrative generation script
-│   ├── tableau_data_extract_manifest.json     # Tableau Hyper / BI data source configuration
-│   └── quicksight_manifest.json               # Visual dashboard dataset and schema mapping
+│   ├── cdk/
+│   │   └── reporting_stack.py                 # Glue Crawler, Athena database, EventBridge cron
+│   ├── src/
+│   │   ├── glue_sprint_etl.py                 # PySpark ETL aggregating sprint velocity and PR churn
+│   │   ├── athena_variance_queries.sql        # Telemetry queries extracting milestone variances
+│   │   └── bedrock_executive_summary.py       # 3-tier executive narrative generation
+│   ├── dashboards/
+│   │   ├── quicksight_template.json           # QuickSight visual definitions
+│   │   └── tableau_data_extract_manifest.json # Tableau data connector configuration
+│   └── sample_data/
+│       └── sample_sprint_telemetry.parquet    # Test dataset for ETL verification
 │
 ├── 03-agentic-orchestration/
-│   ├── openapi_pm_spec.json                   # OpenAPI 3.0 schema defining PM action group tools
-│   ├── step_functions_hitl_workflow.asl.json  # ASL state machine definition with approval tokens
-│   └── mcp_atlassian_rovo_connector.py        # Official Atlassian Remote MCP Server connector
+│   ├── cdk/
+│   │   ├── step_functions_hitl_workflow.asl.json # State Machine definition with approval tokens
+│   │   └── orchestration_stack.py             # SQS approval queue, Step Functions, IAM roles
+│   ├── src/
+│   │   ├── mcp_atlassian_rovo_connector.py    # Official Remote MCP connector (/v2/mcp)
+│   │   └── approval_callback_handler.py       # Processes TPM approval tokens via SNS/SES
+│   └── config/
+│       └── openapi_pm_spec.json               # OpenAPI 3.0 schema defining PM action group tools
 │
 └── 04-predictive-risk-telemetry/
-    ├── cloudwatch_anomaly_alarms.json         # Metric math alarm definitions for delivery metrics
-    └── risk_scoring_pipeline.py               # CPMAI predictive risk scoring and notification logic
+    ├── cdk/
+    │   └── alarms_stack.py                    # CloudWatch Metric Math alarms & SNS topics
+    ├── src/
+    │   ├── metric_math_evaluator.py           # Evaluates statistical deviations across sprints
+    │   └── risk_scoring_pipeline.py           # CPMAI predictive risk scoring engine
+    └── config/
+        └── cloudwatch_anomaly_alarms.json     # CloudWatch metric math alarm definitions
+```
+
+
+---
+
+## 7. Production Deployment & Verification Guide
+
+This solution is designed for automated multi-environment deployment using the AWS Cloud Development Kit (CDK).
+
+### Prerequisites
+* AWS CLI v2 configured with IAM deployment permissions
+* Node.js v18+ and Python 3.12+
+* AWS CDK v2
+* Atlassian Cloud site with Jira Software Cloud and OAuth 2.1 credentials
+
+### Step 1: Deploy Infrastructure with AWS CDK
+```bash
+# Clone the repository
+git clone repo-url
+cd ai-workflow-automation-pm
+
+# Initialize virtual environment and install dependencies
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+
+# Inspect security policies and resources prior to deployment
+cdk diff
+
+# Deploy all stacks to target AWS account
+cdk deploy --all
+```
+
+### Step 2: Ingest Test Data & Verify Pipeline Execution
+```bash
+# Ingest mock standup transcript to trigger the Meeting Intelligence pipeline
+aws s3 cp 01-meeting-intelligence/tests/mock_transcribe_output.json s3://tpm-os-audio-ingest-bucket/incoming/
+
+# Verify Bedrock extraction completed and output was saved
+aws s3 ls s3://tpm-os-verified-actions-bucket/
+
+# Inspect structured JSON action items extracted by Claude 3.5 Sonnet
+aws s3 cp s3://tpm-os-verified-actions-bucket/mock_transcribe_output-extracted-actions.json - | jq .
+```
+
+### Step 3: Execute Local Test Suite
+```bash
+# Run pytest validating JSON schema enforcement and error handling
+pytest 01-meeting-intelligence/tests/ -v
 ```
 
 ---
 
-## 7. Technology Stack & Frameworks
+## 8. Technology Stack & Frameworks
 
 *   **Cloud Infrastructure & Serverless:** Amazon Web Services (AWS) — Amazon Bedrock, AWS Lambda, AWS Step Functions, Amazon Transcribe, Amazon CloudWatch, Amazon QuickSight, AWS Glue, Amazon Athena, Amazon S3, Amazon Kinesis, Amazon SNS, Amazon SES.
 *   **Generative AI & Agentic Frameworks:** Anthropic Claude (via Amazon Bedrock), Amazon Titan, Bedrock AgentCore, Model Context Protocol (MCP), LangChain, Amazon Q Business, Amazon Q Developer.
@@ -253,7 +450,7 @@ ai-workflow-automation-pm/
 
 ---
 
-## 8. Professional Background & Attribution
+## 9. Professional Background & Attribution
 
 **David Maralack**  
 *Senior Technical Program Manager & Enterprise AI Specialist*  
