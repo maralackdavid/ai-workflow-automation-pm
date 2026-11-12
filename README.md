@@ -1,4 +1,4 @@
-# AI & Workflow Automation – Project Management (Enterprise Production Implementation: AWS & Jira AI Edition)
+# AI & Workflow Automation – Project Management (AWS & Jira AI Edition)
 
 An enterprise Technical Program Management (TPM) acceleration framework engineered to transform program operations. Built on **Amazon Web Services (AWS)** reference architectures and deeply integrated with **Jira AI (Atlassian Intelligence, Rovo Agents, and the official Atlassian Remote MCP Server)**, this repository replaces manual status spreadsheets, retrospective meeting notes, and reactive status chasing with event-driven telemetry, automated executive synthesis, agentic dependency tracking, and predictive delivery risk detection.
 
