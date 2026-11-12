@@ -1,4 +1,4 @@
-# AI & Workflow Automation – Project Management (AWS & Jira AI Edition)
+# AI & Workflow Automation – Project Management (Enterprise Multicloud Infrastructure & Atlassian Ecosystem Edition)
 
 An enterprise Technical Program Management (TPM) acceleration framework engineered to transform program operations. Built on **Amazon Web Services (AWS)** reference architectures and deeply integrated with **Jira AI (Atlassian Intelligence, Rovo Agents, and the official Atlassian Remote MCP Server)**, this repository replaces manual status spreadsheets, retrospective meeting notes, and reactive status chasing with event-driven telemetry, automated executive synthesis, agentic dependency tracking, and predictive delivery risk detection.
 
@@ -8,23 +8,38 @@ Authored by **David Maralack** (PMP, PMI-CPMAI, AWS Certified AI Business Strate
 
 ## 1. Operating Philosophy: Building Systems Instead of Chasing Status
 
-In large-scale engineering organizations, traditional technical program management frequently degenerates into administrative maintenance: compiling weekly status decks, chasing engineers for updates, and capturing fragmented notes during stand-ups. This operating model introduces structural delivery risks:
+In high-velocity enterprise platform organizations—particularly those delivering multicloud application security, containerized microservices (Kubernetes / Amazon EKS), and distributed network platforms (BIG-IP Virtual Edition on EC2, NGINX, and Distributed Cloud Services)—traditional technical program management frequently degenerates into administrative maintenance: compiling static status decks, chasing engineers for Jira updates, and capturing fragmented notes during architecture syncs. This operating model introduces structural delivery risks:
 
-*   **Reporting Lag:** Static status decks published on Fridays reflect issues that occurred days earlier, rather than surfacing blockers emerging next week.
-*   **Engineering Administrative Tax:** Tech leads and engineering managers routinely lose three to five hours every week compiling manual variance summaries and grooming ticket backlogs.
-*   **Siloed Delivery Signals:** Pull-request review latency, ticket churn, and cross-team dependencies reside in separate repositories and issue trackers, obscuring critical-path risks until key delivery dates slip.
+*   **Reporting Lag:** Static status decks published on Fridays reflect issues that occurred days earlier, rather than surfacing blockers emerging next week across cross-functional service teams.
+*   **Engineering Administrative Tax:** Tech leads and engineering managers routinely lose 3 to 5 hours every week compiling manual variance summaries, explaining slipped milestones, and grooming Jira backlogs.
+*   **Siloed Delivery Signals:** Pull-request review latency in Git, cross-team API contract mismatches, ticket churn in Jira, and container build telemetry reside in separate repositories, obscuring critical-path risks until key delivery dates slip.
 
-This repository operationalizes the **PMI-CPMAI (Cognitive Project Management for AI)** methodology, **AWS Cloud Adoption Framework**, and modern **AI-native SDLC orchestration in Jira**. It addresses five foundational questions for modern technical program delivery:
+This repository operationalizes the **PMI-CPMAI (Cognitive Project Management for AI)** methodology, **AWS Well-Architected Framework**, and **Atlassian Teamwork Graph**. It transforms the TPM from an administrative coordinator into an architect of automated operational systems, directly answering the five foundational questions of modern program delivery:
 
-1.  **What information should be automated?** Routine operational data collection, stand-up action-item extraction, backlog status aggregation, and Jira duplicate ticket detection.
+1.  **What information should be automated?** Routine operational data collection, stand-up action-item extraction, backlog status aggregation, cross-repo dependency logs, and Jira duplicate ticket detection.
 2.  **What reporting can be generated instead of manually created?** Executive narrative variance reports, sprint burn-down summaries, multi-team status briefs, and Jira comment thread roll-ups.
-3.  **What signals predict future risk?** Pull-request turnaround delays, cross-repository ticket aging, anomalous build failure rates, and upstream dependency churn.
+3.  **What signals predict future risk?** Pull-request turnaround delays, cross-repository ticket aging, anomalous build/test failure rates, and upstream dependency churn.
 4.  **What data should be surfaced before executives ask for it?** Critical-path dependency lags, capacity bottlenecks, and trade-off scenarios on scope versus schedule.
-5.  **What decisions can be accelerated through AI and analytics?** Resource rebalancing across partner teams, scope descoping decisions, and automated bug triage.
+5.  **What decisions can be accelerated through AI and analytics?** Resource rebalancing across partner teams, scope descoping decisions, automated bug triage, and mitigation of cross-service breaking changes.
 
 ---
 
-## 2. Comparative Operational Model
+## 2. Multicloud Infrastructure & Atlassian Ecosystem Alignment
+
+### Multicloud Reality: AWS as Core Engine in a Hybrid Enterprise
+While this reference architecture is implemented with production-tested **AWS services** (Bedrock, Glue, Athena, Step Functions, CloudWatch, and EKS telemetry), it is built on platform-agnostic cloud patterns:
+* **AWS Specialization:** Ingests telemetry across containerized microservices (Amazon EKS), distributed compute (Amazon EC2), API routing (Gateway Load Balancer), and perimeter security logs (AWS WAF).
+* **Multicloud Breadth:** Seamlessly bridges with Microsoft Azure (Azure OpenAI, Azure DevOps) and GCP, reflecting enterprise hybrid-cloud environments.
+
+### The Atlassian Suite as the Delivery Operating System
+* **Jira Software Cloud:** Serves as the single source of truth for portfolio roadmaps, release workflows, and cross-team dependencies.
+* **Confluence Cloud:** The system of record for Architectural Decision Records (ADRs), program charters, and engineering specs.
+* **Tableau & Enterprise Analytics:** Connects to the telemetry lakehouse to generate live burndowns, cycle-time trends, and defect distributions.
+* **Official Atlassian Remote MCP Server:** Connects LLM agents (Claude / Bedrock) directly into Jira and Confluence via OAuth 2.1.
+
+---
+
+## 3. Comparative Operational Model
 
 The following matrix contrasts traditional manual program coordination against the automated, telemetry-driven operating model implemented in this architecture:
 
@@ -38,7 +53,7 @@ The following matrix contrasts traditional manual program coordination against t
 
 ---
 
-## 3. High-Level Infographic Flow & Architecture
+## 4. High-Level Infographic Flow & Architecture
 
 The architecture transforms unstructured operational noise—scattered Jira tickets, lengthy stand-up discussions, and disparate commit streams—into verifiable executive decision velocity. It moves operational data through four interconnected stages with strict Human-in-the-Loop (HITL) checkpoints.
 
@@ -140,7 +155,7 @@ flowchart LR
 
 ---
 
-## 4. Implementation Modules
+## 5. Implementation Modules
 
 The implementation is partitioned into four modular, production-ready components that directly correspond to enterprise AI competencies:
 
@@ -148,7 +163,7 @@ The implementation is partitioned into four modular, production-ready components
 *   **Focus Area:** Automating meeting summaries, action items, and follow-ups.
 *   **AWS Reference Lineage:** Adapted from `aws-samples/amazon-transcribe-post-call-analytics` and `aws-samples/amazon-bedrock-samples`.
 *   **Deep Jira AI Integration:**
-    *   **Amazon Transcribe:** Ingests recorded multi-speaker stand-ups and technical design syncs, applying custom domain vocabularies to handle internal engineering codenames, microservice architectures, and hardware acronyms.
+    *   **Amazon Transcribe:** Ingests recorded multi-speaker stand-ups and technical design syncs, applying custom domain vocabularies to accurately capture complex network infrastructure, container terms, and microservice names (e.g., BIG-IP, NGINX, EKS, Envoy, WAF, Gateway Load Balancer, OAuth 2.1).
     *   **Amazon Bedrock Structured Parsing:** Processes transcripts using high-fidelity prompts to extract clear action items formatted into strict JSON schemas:
         ```json
         {
@@ -175,7 +190,7 @@ The implementation is partitioned into four modular, production-ready components
         *   *Milestones Delivered:* Quantifiable sprint achievements tied directly to quarterly objectives.
         *   *Variance & Root Cause:* Objective breakdown of slipped tasks, separating vendor delays from technical discovery debt.
         *   *Strategic Decisions Required:* Actionable trade-offs presented to leadership regarding scope adjustments, resource reallocations, or accepted technical debt.
-    *   **Executive Visualization (Amazon QuickSight):** Connects to the underlying Lakehouse to present real-time burndowns and risk distributions powered by Amazon Q in QuickSight, eliminating the need for manually formatted status decks.
+    *   **Executive Visualization (Tableau & QuickSight):** Connects to the underlying Lakehouse to present real-time burndowns, defect distributions, and release risk metrics in Tableau and QuickSight, directly matching enterprise delivery reporting standards and eliminating static presentation decks.
 
 ### Module 3: Agentic Dependency Orchestration & Tool Governance (`/03-agentic-orchestration`)
 *   **Focus Area:** Hands-on AI tool utilization and building AI-powered workflows with verified controls.
@@ -196,7 +211,7 @@ The implementation is partitioned into four modular, production-ready components
 
 ---
 
-## 5. Repository Structure
+## 6. Repository Structure
 
 ```
 ai-workflow-automation-pm/
@@ -212,6 +227,7 @@ ai-workflow-automation-pm/
 ├── 02-executive-reporting/
 │   ├── glue_etl_sprint_metrics.py             # Serverless ETL aggregating sprint and PR telemetry
 │   ├── bedrock_variance_summarizer.py         # Multi-tier executive narrative generation script
+│   ├── tableau_data_extract_manifest.json     # Tableau Hyper / BI data source configuration
 │   └── quicksight_manifest.json               # Visual dashboard dataset and schema mapping
 │
 ├── 03-agentic-orchestration/
@@ -226,18 +242,18 @@ ai-workflow-automation-pm/
 
 ---
 
-## 6. Technology Stack & Frameworks
+## 7. Technology Stack & Frameworks
 
 *   **Cloud Infrastructure & Serverless:** Amazon Web Services (AWS) — Amazon Bedrock, AWS Lambda, AWS Step Functions, Amazon Transcribe, Amazon CloudWatch, Amazon QuickSight, AWS Glue, Amazon Athena, Amazon S3, Amazon Kinesis, Amazon SNS, Amazon SES.
 *   **Generative AI & Agentic Frameworks:** Anthropic Claude (via Amazon Bedrock), Amazon Titan, Bedrock AgentCore, Model Context Protocol (MCP), LangChain, Amazon Q Business, Amazon Q Developer.
 *   **Jira AI & Atlassian Ecosystem:** Jira Software Cloud, Atlassian Intelligence (Natural Language JQL, comment summarization, smart fields, duplicate detection), Atlassian Rovo Agents, Official Atlassian Remote MCP Server (`https://mcp.atlassian.com/v2/mcp`), Atlassian Teamwork Graph, Confluence Cloud, Bitbucket Cloud.
 *   **CI/CD & Delivery Systems:** AWS CodePipeline, AWS CodeBuild, AWS CodeCommit, GitHub, Slack, Amazon Chime.
-*   **Business Intelligence & Telemetry:** Amazon QuickSight (Executive dashboards & Amazon Q in QuickSight narrative summaries), Amazon CloudWatch Metric Math.
+*   **Analytics & Business Intelligence:** Tableau, Amazon QuickSight (Executive dashboards & Amazon Q in QuickSight narrative summaries), SQL Lakehouses, Amazon CloudWatch Metric Math.
 *   **Governance & Program Frameworks:** Project Management Professional (PMP)®, PMI Certified Professional in Managing AI (PMI-CPMAI), AWS Well-Architected Framework, AWS Cloud Adoption Framework.
 
 ---
 
-## 7. Professional Background & Attribution
+## 8. Professional Background & Attribution
 
 **David Maralack**  
 *Senior Technical Program Manager & Enterprise AI Specialist*  
