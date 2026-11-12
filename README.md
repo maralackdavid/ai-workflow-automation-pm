@@ -38,42 +38,106 @@ The following matrix contrasts traditional manual program coordination against t
 
 ---
 
-## 3. System Architecture & Data Flow
+## 3. High-Level Infographic Flow & Architecture
 
-The platform is designed around a decoupled, event-driven architecture that transitions operational data through four distinct stages:
+The architecture transforms unstructured operational noise—scattered tickets, lengthy stand-up discussions, and disparate commit streams—into verifiable executive decision velocity. It moves operational data through four interconnected stages with strict Human-in-the-Loop (HITL) checkpoints.
+
+### Visual Infographic Architecture (GitHub Rendered)
+
+```mermaid
+flowchart LR
+    %% Styles
+    classDef ingestion fill:#EBF5FB,stroke:#2980B9,stroke-width:2px,color:#1B4F72;
+    classDef intelligence fill:#E8F8F5,stroke:#16A085,stroke-width:2px,color:#0E6251;
+    classDef governance fill:#FEF9E7,stroke:#F39C12,stroke-width:2px,color:#7D6608;
+    classDef delivery fill:#F4ECF7,stroke:#8E44AD,stroke-width:2px,color:#4A235A;
+
+    subgraph STAGE1["1. MULTI-MODAL INGESTION"]
+        direction TB
+        A1["Standup Audio Syncs"] -->|Stream| B1["Amazon Transcribe"]
+        A2["Issue Backlogs: Jira & GitHub"] -->|Events| B2["Amazon Kinesis & S3"]
+        A3["AWS CodeSuite & CI/CD Telemetry"] -->|Logs| B3["Amazon CloudWatch"]
+    end
+
+    subgraph STAGE2["2. INTELLIGENCE & SYNTHESIS"]
+        direction TB
+        B1 --> C1["Bedrock Action-Item Agent"]
+        B2 --> C2["AWS Glue & Athena Lakehouse"]
+        C2 --> C3["Bedrock Variance Synthesizer"]
+        B2 -.-> C4["Bedrock AgentCore & MCP Tracker"]
+        B3 --> C5["CloudWatch Metric Math Anomaly Engine"]
+    end
+
+    subgraph STAGE3["3. RESPONSIBLE AI GOVERNANCE"]
+        direction TB
+        C1 --> D1{"Step Functions HITL Gate"}
+        C3 --> D1
+        C4 --> D1
+        D1 -->|TPM / Lead Approval Token| E1["Validated Roadmaps & Actions"]
+        C5 --> E2["Predictive Risk Anomaly Alarm"]
+    end
+
+    subgraph STAGE4["4. EXECUTIVE DECISION VELOCITY"]
+        direction TB
+        E1 --> F1["Amazon QuickSight Dashboards"]
+        E1 --> F2["Amazon Q Natural Language Queries"]
+        E1 --> F3["Automated Jira & GitHub Routing"]
+        E1 --> F4["Slack & Amazon Chime Broadcasts"]
+        E2 --> F5["Amazon SNS Early-Warning Escalation"]
+    end
+
+    class A1,A2,A3,B1,B2,B3 ingestion;
+    class C1,C2,C3,C4,C5 intelligence;
+    class D1,E1,E2 governance;
+    class F1,F2,F3,F4,F5 delivery;
+```
+
+### Infographic Flow: From Operational Noise to Executive Clarity
 
 ```
-[Delivery Sources: Standups, Jira, GitHub, AWS CodeSuite]
-                    │
-                    ▼
-[Stage 1: Continuous Ingestion]
-   ├── Audio Streams ──► Amazon Transcribe
-   ├── Webhooks / Logs ──► Amazon Kinesis / Amazon S3 Lake
-   └── Fleet & CI/CD Telemetry ──► Amazon CloudWatch
-                    │
-                    ▼
-[Stage 2: Intelligence & Synthesis Engine]
-   ├── Action-Item Agent ──► Amazon Bedrock (Claude / Titan)
-   ├── Variance Synthesizer ──► AWS Glue + Athena + Amazon Bedrock
-   └── Predictive Metric Math ──► CloudWatch Anomaly Detection
-                    │
-                    ▼
-[Stage 3: Governance & Verification Gate]
-   └── AWS Step Functions Human-in-the-Loop (HITL) Approval Gate
-                    │
-                    ▼
-[Stage 4: Executive Decision Velocity]
-   ├── Live Dashboards ──► Amazon QuickSight (Amazon Q in QuickSight)
-   ├── Stakeholder Broadcasts ──► Automated Slack / Amazon Chime / Amazon SNS
-   └── Early Warning Triggers ──► Amazon SNS Risk Escalations
+  ┌────────────────────────────────────────────────────────────────────────────────────────┐
+  │                           STAGE 1: MULTI-MODAL INGESTION                               │
+  │  Standup Audio ──► Amazon Transcribe (Domain Vocabularies & Speaker Diarization)       │
+  │  Issue Logs    ──► Amazon Kinesis / S3 Lakehouse (Real-time Webhook Ingestion)        │
+  │  CI/CD Churn   ──► Amazon CloudWatch (Commit Velocity & PR Turnaround Metrics)         │
+  └──────────────────────────────────────────┬─────────────────────────────────────────────┘
+                                             │
+                                             ▼
+  ┌────────────────────────────────────────────────────────────────────────────────────────┐
+  │                        STAGE 2: AI SYNTHESIS & METRIC MATH                             │
+  │  Action Extraction ──► Amazon Bedrock (Zero-Shot JSON Schema Parsing)                 │
+  │  Variance Analysis ──► AWS Glue + Athena Lakehouse + Amazon Bedrock Synthesizer        │
+  │  Dependency Audit  ──► Bedrock AgentCore + Model Context Protocol (Cross-Repo Backlog) │
+  │  Anomaly Detection ──► CloudWatch Metric Math (Dynamic Statistical Expected-Bands)     │
+  └──────────────────────────────────────────┬─────────────────────────────────────────────┘
+                                             │
+                                             ▼
+  ┌────────────────────────────────────────────────────────────────────────────────────────┐
+  │                      STAGE 3: RESPONSIBLE AI GOVERNANCE GATE                           │
+  │  AWS Step Functions Human-in-the-Loop (HITL) Workflow Execution                       │
+  │  ├── Programmatic Pause Token: Halts autonomous updates to production roadmaps         │
+  │  ├── TPM / Tech Lead Review: 5-minute review of AI-synthesized narrative variance      │
+  │  └── One-Click Verification: Approves task dispatch via Amazon SES / SNS callback     │
+  └──────────────────────────────────────────┬─────────────────────────────────────────────┘
+                                             │
+                                             ▼
+  ┌────────────────────────────────────────────────────────────────────────────────────────┐
+  │                        STAGE 4: EXECUTIVE DECISION VELOCITY                            │
+  │  Live Visibility   ──► Amazon QuickSight & Amazon Q (Self-Service Conversational BI)   │
+  │  Delivery Rhythm   ──► Automated Slack & Amazon Chime Synthesis Broadcasts             │
+  │  Action Execution  ──► Direct Jira & GitHub Milestone Issue Generation                │
+  │  Proactive Defense ──► 2-to-3 Week Early Warning SNS Risk Notifications               │
+  └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Architectural Workflow
+### Stage-by-Stage Operational Walkthrough
 
-1.  **Continuous Telemetry & Data Ingestion:** Stand-up audio recordings, issue tracker webhooks (Jira, GitHub, AWS CodePipeline / CodeCommit), and CI/CD pipeline metrics stream continuously into Amazon S3, Amazon Kinesis, and Amazon CloudWatch.
-2.  **Intelligence & Synthesis Engine:** Amazon Bedrock executes zero-shot and few-shot analytical prompts to extract structured JSON action items and author executive variance narratives directly from raw sprint telemetry.
-3.  **Governance & Verification Gate:** An AWS Step Functions state machine enforces Human-in-the-Loop (HITL) review tasks, requiring explicit TPM or engineering lead sign-off via Amazon SES/SNS callback tasks before committing roadmap updates or publishing portfolio reports.
-4.  **Executive Surface & Decision Velocity:** Validated insights update interactive Amazon QuickSight executive dashboards and push notifications to dedicated leadership communication channels via Amazon Chime, Slack, and Amazon SNS.
+| Stage & Component | Primary AWS Services | Operational Input | TPM Output & Business Impact |
+| :--- | :--- | :--- | :--- |
+| **1. Multi-Modal Ingestion** | Amazon Transcribe, Amazon Kinesis, Amazon S3, CloudWatch | Unstructured meeting recordings, Jira/GitHub events, CI/CD telemetry | Centralized, query-ready operational data stream without manual reporting sheets |
+| **2. Intelligence & Synthesis** | Amazon Bedrock, Bedrock AgentCore, AWS Glue, Amazon Athena | Multi-speaker transcripts, sprint burndown metrics, cross-repo API PRs | Automated JSON action items, cross-team dependency mapping, and 3-bullet variance summaries |
+| **3. Responsible AI Governance** | AWS Step Functions, Amazon SNS, Amazon SES | AI-drafted milestone adjustments, unassigned tasks, narrative summaries | **Zero hallucination risk**; enforces human accountability and audit trails before updating master plans |
+| **4. Executive Decision Velocity** | Amazon QuickSight, Amazon Q, Slack, Amazon Chime | Validated executive summaries, anomaly scores, approved tickets | **80% reporting time savings**; eliminates surprise slips with 2–3 week predictive warnings |
 
 ---
 
