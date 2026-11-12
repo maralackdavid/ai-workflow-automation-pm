@@ -1,6 +1,6 @@
 # AI & Workflow Automation – Project Management
 
-An enterprise Technical Program Management (TPM) acceleration framework engineered to transform program operations. Built exclusively on Amazon Web Services (AWS) reference architectures, this repository replaces traditional operational overhead—manual status spreadsheets, retrospective meeting notes, and reactive status chasing—with event-driven telemetry, automated executive synthesis, agentic dependency tracking, and predictive risk detection.
+An enterprise Technical Program Management (TPM) acceleration framework engineered to use AI to automate project management workflows. Built on Amazon Web Services (AWS) reference architectures, but the underlying ingestion, LLM synthesis, and governance patterns apply directly to Azure or any other enterprise cloud environment. This repository replaces traditional operational overhead—manual status spreadsheets, retrospective meeting notes, and reactive status chasing—with event-driven telemetry, automated executive synthesis, agentic dependency tracking, and predictive risk detection.
 
 Authored by **David Maralack** (PMP, PMI-CPMAI, AWS Certified AI Business Strategist).
 
